@@ -11,7 +11,6 @@ import {
   Code2,
   Database,
   GitBranch,
-  GitFork,
   Heart,
   Home,
   Lightbulb,
@@ -67,7 +66,7 @@ const navItems = [
 ]
 
 function Logo() {
-  return <div className="flex items-center gap-3"><div className="grid size-11 place-items-center rounded-xl bg-slate-950 text-white shadow-sm"><GitFork className="size-7" /></div><div><div className="text-[20px] font-bold tracking-tight text-slate-900">Repo<span className="text-violet-600">Qidiruv</span></div><div className="text-[11px] text-slate-500">GitHub loyihalarini qidirish</div></div></div>
+  return <div className="flex items-center gap-3"><div className="grid size-11 place-items-center rounded-xl bg-slate-950 shadow-sm"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/github/light.svg" alt="GitHub" className="size-7" /></div><div><div className="text-[20px] font-bold tracking-tight text-slate-900">Repo<span className="text-violet-600">Qidiruv</span></div><div className="text-[11px] text-slate-500">GitHub loyihalarini qidirish</div></div></div>
 }
 
 function ProjectIcon({ project }: { project: Project }) {
