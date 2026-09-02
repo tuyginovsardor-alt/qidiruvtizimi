@@ -1,6 +1,7 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import useSWR from 'swr'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Bell,
   BookOpen,
@@ -28,6 +29,8 @@ import {
   X,
   Zap,
 } from 'lucide-react'
+
+type RepoResult = { id: number; name: string; fullName: string; description: string | null; language: string; stars: number; forks: number; updatedAt: string; htmlUrl: string; avatar?: string }
 
 type Project = {
   name: string
@@ -65,8 +68,10 @@ const navItems = [
   { label: 'Mening profilim', icon: Users },
 ]
 
+const fetcher = (url: string) => fetch(url).then((response) => { if (!response.ok) throw new Error('GitHub qidiruvi bajarilmadi'); return response.json() })
+
 function Logo() {
-  return <div className="flex items-center gap-3"><div className="grid size-11 place-items-center rounded-xl bg-slate-950 shadow-sm"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/github/light.svg" alt="GitHub" className="size-7" /></div><div><div className="text-[20px] font-bold tracking-tight text-slate-900">Repo<span className="text-violet-600">Qidiruv</span></div><div className="text-[11px] text-slate-500">GitHub loyihalarini qidirish</div></div></div>
+  return <div className="flex items-center gap-3"><div className="grid size-11 place-items-center rounded-xl bg-slate-950 shadow-sm"><svg viewBox="0 0 24 24" aria-label="GitHub" role="img" className="size-7 fill-white"><path d="M12 .7a12 12 0 0 0-3.79 23.39c.6.11.82-.26.82-.58v-2.04c-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.09-.75.08-.74.08-.74 1.2.08 1.84 1.23 1.84 1.23 1.07 1.83 2.8 1.3 3.48.99.11-.78.42-1.3.76-1.6-2.67-.3-5.47-1.34-5.47-5.95 0-1.31.47-2.38 1.23-3.22-.12-.3-.53-1.52.12-3.17 0 0 1-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.3-1.55 3.3-1.23 3.3-1.23.65 1.65.24 2.87.12 3.17.77.84 1.23 1.91 1.23 3.22 0 4.62-2.8 5.64-5.48 5.94.43.37.81 1.1.81 2.22v3.29c0 .32.22.7.83.58A12 12 0 0 0 12 .7Z" /></svg></div><div><div className="text-[20px] font-bold tracking-tight text-slate-900">Repo<span className="text-violet-600">Qidiruv</span></div><div className="text-[11px] text-slate-500">GitHub loyihalarini qidirish</div></div></div>
 }
 
 function ProjectIcon({ project }: { project: Project }) {
@@ -75,13 +80,18 @@ function ProjectIcon({ project }: { project: Project }) {
 
 export function RepoDashboard() {
   const [query, setQuery] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
+  useEffect(() => { const timer = window.setTimeout(() => setSearchQuery(query), 350); return () => window.clearTimeout(timer) }, [query])
   const [activeNav, setActiveNav] = useState('Bosh sahifa')
   const [language, setLanguage] = useState('Barchasi')
   const [sort, setSort] = useState('Eng mos keluvchi')
   const [dark, setDark] = useState(false)
   const [mobileNav, setMobileNav] = useState(false)
-
-  const filteredRows = useMemo(() => recentProjects.filter(([name, description, lang]) => `${name} ${description} ${lang}`.toLowerCase().includes(query.toLowerCase()) && (language === 'Barchasi' || lang === language)), [query, language])
+  const normalizedQuery = searchQuery.trim() || 'stars:>1000'
+  const apiUrl = `/api/repos?q=${encodeURIComponent(normalizedQuery)}&language=${encodeURIComponent(language)}`
+  const { data, error, isLoading } = useSWR<{ total: number; items: RepoResult[] }>(apiUrl, fetcher, { keepPreviousData: true, dedupingInterval: 60000, revalidateOnFocus: false })
+  const liveRows = data?.items ?? []
+  const filteredRows = useMemo(() => liveRows, [liveRows])
 
   return <div className={dark ? 'app-shell dark-mode' : 'app-shell'}>
     <aside className={mobileNav ? 'sidebar mobile-open' : 'sidebar'}>
@@ -98,7 +108,7 @@ export function RepoDashboard() {
         <section className="welcome"><div><h1>Xush kelibsiz, Sardor!</h1><p>GitHub’dan eng yaxshi loyihalarni qidirish va topish oson.</p></div><button className="settings-button"><Settings2 /> Sozlamalar</button></section>
         <section className="stats-grid">{[['Jami loyihalar', '12 540 786', 'GitHub’da mavjud', 'document'], ['Yulduzlar', '3 245 987', 'Bugungacha berilgan', 'star'], ['Forklar', '1 125 654', 'Loyihalar nusxalari', 'fork'], ['Dasturchilar', '578 920', 'Faol contributor', 'code']].map(([label, value, sub, type]) => <div className={`stat-card ${type}`} key={label}><div className="stat-icon">{type === 'star' ? <Star /> : type === 'fork' ? <GitBranch /> : type === 'code' ? <Code2 /> : <BookOpen />}</div><div><strong>{value}</strong><h3>{label}</h3><p>{sub}</p></div></div>)}</section>
         <section className="section-block"><div className="section-heading"><h2><span>🔥</span> Trenddagi loyihalar</h2><button>Barchasini ko‘rish</button></div><div className="trend-grid">{projects.map((project, index) => <article className="trend-card" key={project.name}><div className="rank">{index + 1}</div><ProjectIcon project={project} /><a href={`https://github.com/${project.name}`} target="_blank" rel="noreferrer">{project.name}</a><p>{project.description}</p><span className={`language-pill ${project.language.toLowerCase()}`}>{project.language}</span><div className="project-meta"><span><Star /> {project.stars}</span><span><GitBranch /> {project.forks}</span></div></article>)}<button className="carousel-next" aria-label="Keyingi loyihalar"><ChevronRight /></button></div></section>
-        <section className="section-block recent"><div className="section-heading"><h2>Yangi qo‘shilgan loyihalar</h2><button>Barchasini ko‘rish</button></div><div className="table-card"><div className="table-head"><span>Loyiha nomi</span><span>Til</span><span>Yulduzlar</span><span>Yangilangan</span></div>{filteredRows.map(([name, description, lang, stars, updated]) => <div className="table-row" key={name}><div className="repo-name"><div className="repo-mini"><Code2 /></div><div><a href={`https://github.com/${name}`} target="_blank" rel="noreferrer">{name}</a><small>{description}</small></div></div><div className="table-language"><i className={lang.toLowerCase()} />{lang}</div><span><Star /> {stars}</span><span>{updated}</span></div>)}{filteredRows.length === 0 && <div className="empty-row">Qidiruv bo‘yicha loyiha topilmadi.</div>}<button className="more-button">Ko‘proq yangi loyihalar</button></div></section>
+        <section className="section-block recent"><div className="section-heading"><h2>Yangi qo‘shilgan loyihalar</h2><button>Barchasini ko‘rish</button></div><div className="table-card"><div className="table-head"><span>Loyiha nomi</span><span>Til</span><span>Yulduzlar</span><span>Yangilangan</span></div>{isLoading && <div className="empty-row">GitHub loyihalari yuklanmoqda...</div>}{error && <div className="empty-row">GitHub API bilan bog‘lanishda xatolik yuz berdi.</div>}{filteredRows.map((repo) => <div className="table-row" key={repo.id}><div className="repo-name"><div className="repo-mini">{repo.avatar ? <img src={repo.avatar} alt="" /> : <Code2 />}</div><div><a href={repo.htmlUrl} target="_blank" rel="noreferrer">{repo.fullName}</a><small>{repo.description || 'Tavsif mavjud emas'}</small></div></div><div className="table-language"><i className={repo.language.toLowerCase()} />{repo.language}</div><span><Star /> {repo.stars.toLocaleString()}</span><span>{new Date(repo.updatedAt).toLocaleDateString('uz-UZ')}</span></div>)}{!isLoading && !error && filteredRows.length === 0 && <div className="empty-row">Qidiruv bo‘yicha loyiha topilmadi.</div>}<button className="more-button">Ko‘proq yangi loyihalar</button></div></section>
       </main>
     </div>
 

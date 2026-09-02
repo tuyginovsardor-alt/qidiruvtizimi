@@ -18,7 +18,12 @@ export async function GET(request: NextRequest) {
 
   const headers: HeadersInit = { Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' }
   if (process.env.GITHUB_TOKEN) headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`
-  const response = await fetch(url, { headers, next: { revalidate: 60 } })
+  let response: Response
+  try {
+    response = await fetch(url, { headers, next: { revalidate: 60 }, signal: AbortSignal.timeout(8000) })
+  } catch {
+    return NextResponse.json({ error: 'GitHub API vaqtida javob bermadi' }, { status: 504 })
+  }
   if (!response.ok) return NextResponse.json({ error: 'GitHub API so‘rovi bajarilmadi' }, { status: response.status })
   const data = await response.json()
   const items = data.items.map((repo: Record<string, unknown>) => ({
