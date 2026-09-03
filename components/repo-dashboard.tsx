@@ -6,7 +6,7 @@ import { BookOpen, Code2, Database, GitBranch, Heart, Home, Menu, Moon, Search, 
 
 type Repo = { id: number; fullName: string; description: string | null; language: string; stars: number; forks: number; updatedAt: string; htmlUrl: string; avatar?: string }
 const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error('Search failed'); return r.json() })
-const formatNumber = (value: number) => value.toLocaleString('en-US')
+const formatNumber = (value: number) => String(value).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
 const categories = [['Web dasturlash', 'web'], ['Mobil ilovalar', 'mobile'], ['Telegram botlar', 'telegram'], ['Sun’iy intellekt', 'ai'], ['O‘yinlar', 'game'], ['Ma’lumotlar bazasi', 'database'], ['DevOps', 'devops']] as const
 const nav = [['Bosh sahifa', Home], ['Qidiruv', Search], ['Trenddagi loyihalar', TrendingUp], ['Top toifalar', Trophy], ['Saqlanganlar', Heart], ['Mening profilim', Users]] as const
 
